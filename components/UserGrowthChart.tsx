@@ -9,17 +9,27 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  TooltipProps,
 } from "recharts";
+import {
+  ValueType,
+  NameType,
+} from "recharts/types/component/DefaultTooltipContent";
 
+// Define the shape of user growth data
 type UserGrowth = {
   year: number;
   month: string;
   users: number;
-  date: string; // <-- month + year
+  date: string; // computed as month + year
 };
 
-// Custom tooltip component
-const CustomTooltip = ({ active, payload, label }: any) => {
+// Custom tooltip component with proper typing
+const CustomTooltip = ({
+  active,
+  payload,
+  label,
+}: TooltipProps<ValueType, NameType>) => {
   if (active && payload && payload.length) {
     return (
       <div className="rounded-lg bg-white p-2 shadow-md border text-sm">
@@ -31,12 +41,17 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export default function UserGrowthChart({ growthData }: { growthData: any[] }) {
+// Main chart
+export default function UserGrowthChart({
+  growthData,
+}: {
+  growthData: UserGrowth[];
+}) {
   const [data, setData] = useState<UserGrowth[]>([]);
 
   useEffect(() => {
     if (growthData && growthData.length > 0) {
-      const formatted = growthData.map((item) => ({
+      const formatted: UserGrowth[] = growthData.map((item) => ({
         ...item,
         date: `${item.month} ${item.year}`,
       }));
@@ -55,7 +70,7 @@ export default function UserGrowthChart({ growthData }: { growthData: any[] }) {
             <AreaChart data={data}>
               <XAxis dataKey="date" />
               <YAxis />
-              <Tooltip content={<CustomTooltip />} /> {/* ✅ custom tooltip */}
+              <Tooltip content={<CustomTooltip />} />
               <Area
                 type="monotone"
                 dataKey="users"

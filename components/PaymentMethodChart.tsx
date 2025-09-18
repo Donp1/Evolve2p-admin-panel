@@ -10,13 +10,6 @@ import {
   Legend,
 } from "recharts";
 
-const rawData = [
-  { paymentMethod: "Bank Transfer", trades: 13 },
-  { paymentMethod: "Paypal", trades: 0 },
-  { paymentMethod: "Cash App", trades: 0 },
-  { paymentMethod: "Zelle", trades: 0 },
-];
-
 const COLORS = ["#3b82f6", "#f59e0b", "#22c55e", "#ef4444"];
 
 interface pageProps {
@@ -25,7 +18,7 @@ interface pageProps {
 
 export function PaymentMethodsChart({ paymentMethodsData }: pageProps) {
   // Reformat to { name, value }
-  const paymentData = paymentMethodsData.map((item) => ({
+  const paymentData = paymentMethodsData.map((item: any) => ({
     name: item.paymentMethod,
     value: item.trades,
   }));

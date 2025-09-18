@@ -10,17 +10,23 @@ import {
   Legend,
 } from "recharts";
 
-// Reformat into array for chart
+export type TradeStatusData = {
+  total: number;
+  completed: number;
+  pending: number;
+  cancelled: number;
+};
 
 const COLORS = ["#22c55e", "#3b82f6", "#f59e0b"];
 // green = completed, blue = pending, orange = cancelled
 
-export function TradeStatusChart({ rawData }: { rawData: any }) {
+export function TradeStatusChart({ rawData }: { rawData: TradeStatusData }) {
   const tradeStatusData = [
     { name: "Completed", value: rawData?.completed },
     { name: "Pending", value: rawData?.pending },
     { name: "Cancelled", value: rawData?.cancelled },
   ];
+
   return (
     <Card>
       <CardHeader>
@@ -39,8 +45,8 @@ export function TradeStatusChart({ rawData }: { rawData: any }) {
                 outerRadius={100}
                 innerRadius={60}
                 label={({ name, value }) =>
-                  value > 0 ? `${name}: ${value}` : ""
-                } // hide labels for 0 values
+                  value && value > 0 ? `${name}: ${value}` : ""
+                }
               >
                 {tradeStatusData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index]} />

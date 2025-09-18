@@ -11,7 +11,17 @@ import {
   Legend,
 } from "recharts";
 
-export function TopCountriesChart({ countryData }: { countryData: any[] }) {
+// Define type for country data
+type CountryData = {
+  country: string;
+  users: number;
+};
+
+export function TopCountriesChart({
+  countryData,
+}: {
+  countryData: CountryData[];
+}) {
   return (
     <Card>
       <CardHeader>
