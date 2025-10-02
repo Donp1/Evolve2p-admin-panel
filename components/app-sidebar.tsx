@@ -2,9 +2,14 @@
 
 import * as React from "react";
 import {
+  ArrowLeftRight,
+  ArrowLeftRightIcon,
+  Banknote,
   BookOpen,
   Bot,
+  Coins,
   Command,
+  CreditCard,
   Frame,
   Handshake,
   Home,
@@ -83,49 +88,33 @@ const data = {
     },
     {
       title: "Trades",
-      url: "#",
+      url: "/dashboard/trades",
       icon: Handshake,
-      items: [
-        // {
-        //   title: "Introduction",
-        //   url: "#",
-        // },
-        // {
-        //   title: "Get Started",
-        //   url: "#",
-        // },
-        // {
-        //   title: "Tutorials",
-        //   url: "#",
-        // },
-        // {
-        //   title: "Changelog",
-        //   url: "#",
-        // },
-      ],
+    },
+    {
+      title: "Offers",
+      url: "/dashboard/offers",
+      icon: Coins,
+    },
+    {
+      title: "Swaps",
+      url: "/dashboard/swaps",
+      icon: ArrowLeftRight,
+    },
+    {
+      title: "Transactions",
+      url: "/dashboard/transactions",
+      icon: Banknote,
+    },
+    {
+      title: "Payment Methods",
+      url: "/dashboard/payment_method",
+      icon: CreditCard,
     },
     {
       title: "Disputes",
-      url: "#",
+      url: "/dashboard/disputes",
       icon: ShieldAlert,
-      items: [
-        // {
-        //   title: "General",
-        //   url: "#",
-        // },
-        // {
-        //   title: "Team",
-        //   url: "#",
-        // },
-        // {
-        //   title: "Billing",
-        //   url: "#",
-        // },
-        // {
-        //   title: "Limits",
-        //   url: "#",
-        // },
-      ],
     },
     {
       title: "Settings",

@@ -4,127 +4,142 @@ import { LineChartInteractive } from "@/components/LineChart";
 import { MostTradedAssetsChart } from "@/components/MostTradedChart";
 import { PaymentMethodsChart } from "@/components/PaymentMethodChart";
 import { TradeStatusChart } from "@/components/TradeStatusChart";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import UserGrowthChart from "@/components/UserGrowthChart";
 import { TopCountriesChart } from "@/components/UsersByCountriesChart";
 import { VerificationChart } from "@/components/VerifiedChart";
-
 import { useAlert } from "@/hooks/useAlert";
-import { getOverview } from "@/lib/utils";
+import { useAuthStore } from "@/hooks/useAuth";
+import { checkToken, getOverview } from "@/lib/utils";
+import { Loader } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+
+// ✅ Reusable stat card
+function StatCard({
+  title,
+  value,
+  accent,
+}: {
+  title: string;
+  value: string | number;
+  accent?: string;
+}) {
+  return (
+    <Card
+      className={`flex aspect-video flex-col items-center justify-center gap-2 text-center ${
+        accent || ""
+      }`}
+    >
+      <h4 className="text-sm font-medium text-muted-foreground">{title}</h4>
+      <h3 className="font-extrabold text-4xl tracking-wide">{value}</h3>
+    </Card>
+  );
+}
 
 export default function Page() {
   const { openAlert } = useAlert();
-  const [loading, setLoading] = useState(false);
-  const [userData, setUserData] = useState<any>(null);
-  const [tradesData, setTradesData] = useState<any>(null);
-  const [disputes, setDisputes] = useState<any>(null);
-  const [userGrowth, setUserGrowth] = useState<any[]>([]);
-  const [paymentMethodsData, setPaymentMethodsData] = useState<any[]>([]);
-  const [mostTradedAssetsData, setMostTradedAssetsData] = useState<any[]>([]);
-  const [countriesData, setCountriesData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [overview, setOverview] = useState<any>(null);
+
+  const setUser = useAuthStore((state) => state.setUser);
+  const router = useRouter();
 
   useEffect(() => {
     (async () => {
-      setLoading(true);
-      const res = await getOverview();
+      try {
+        setLoading(true);
 
-      setLoading(false);
+        const checkTokenRes = await checkToken();
+        if (checkTokenRes?.error) {
+          localStorage.clear();
+          openAlert({
+            title: "Error",
+            type: "error",
+            message: checkTokenRes?.message,
+            actions: [
+              {
+                label: "Login",
+                onClick: () => router.replace("/"),
+              },
+            ],
+          });
+          return;
+        }
 
-      if (res?.error) {
+        if (checkTokenRes?.success) {
+          setUser(checkTokenRes?.user);
+        }
+
+        const res = await getOverview();
+
+        if (res?.error) {
+          openAlert({
+            title: "Error",
+            type: "error",
+            message: res?.message || "Something went wrong.",
+            actions: [{ label: "Close" }],
+          });
+          return;
+        }
+
+        setOverview(res);
+      } catch (error: any) {
         openAlert({
-          type: "error",
           title: "Error",
-          message: res?.message || "Something went wrong. Please try again.",
-          actions: [{ label: "Close" }],
+          type: "error",
+          message: error.message || "Unexpected error occurred.",
         });
+      } finally {
         setLoading(false);
-        return;
       }
-
-      setUserData(res?.users);
-      setTradesData(res?.trades);
-      setDisputes(res?.disputes);
-      setUserGrowth(res?.analytics?.userGrowth);
-      setPaymentMethodsData(res?.analytics?.paymentMethods);
-      setMostTradedAssetsData(res?.analytics?.mostTradedAssets);
-      setCountriesData(res?.analytics?.topCountries);
-      console.log(res);
     })();
-  }, []);
+  }, [router]);
 
-  if (loading)
+  if (loading) {
     return (
-      <div>
-        <h1 className="text-center font-bold">Loading...</h1>
+      <div className="flex h-full w-full items-center justify-center">
+        <Loader className="animate-spin" size={40} />
       </div>
     );
+  }
+
+  const { users, trades, disputes, analytics } = overview || {};
 
   return (
-    <>
-      <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-        <div className="shadow shadow-[#fff] aspect-video rounded-xl flex flex-col items-center justify-center gap-10">
-          <h1 className="font-medium">Total Users</h1>
-          <h3 className="font-extrabold text-4xl tracking-wider">
-            {userData?.total}
-          </h3>
-        </div>
-        <div className="shadow shadow-[#fff] aspect-video rounded-xl flex flex-col items-center justify-center gap-10">
-          <h1 className="font-medium">KYC Approved</h1>
-          <h3 className="font-extrabold text-4xl tracking-wider">
-            {userData?.verified}
-          </h3>
-        </div>
-        <div className="shadow shadow-[#fff] aspect-video rounded-xl flex flex-col items-center justify-center gap-10">
-          <h1 className="font-medium">KYC Pending</h1>
-          <h3 className="font-extrabold text-4xl tracking-wider">
-            {userData?.unverified}
-          </h3>
-        </div>
-        <div className="shadow shadow-[#b98c8c] aspect-video rounded-xl flex flex-col items-center justify-center gap-10">
-          <h1 className="font-medium">Trades</h1>
-          <h3 className="font-extrabold text-4xl tracking-wider">
-            {tradesData?.total}
-          </h3>
-        </div>
-        <div className="shadow shadow-[#fff] aspect-video rounded-xl flex flex-col items-center justify-center gap-10">
-          <h1 className="font-medium">Disputes</h1>
-          <h3 className="font-extrabold text-4xl tracking-wider">
-            {disputes?.open || 0}
-          </h3>
-        </div>
+    <div className="space-y-6">
+      {/* Stats grid */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <StatCard title="Total Users" value={users?.total ?? 0} />
+        <StatCard title="KYC Approved" value={users?.verified ?? 0} />
+        <StatCard title="KYC Pending" value={users?.unverified ?? 0} />
+        <StatCard
+          title="Trades"
+          value={trades?.total ?? 0}
+          accent="border border-green-300"
+        />
+        <StatCard
+          title="Disputes"
+          value={disputes?.open ?? 0}
+          accent="border border-red-300"
+        />
       </div>
 
-      {/* <div className="h-auto rounded-xl md:min-h-min">
-        <LineChartInteractive />
-      </div> */}
+      {/* Charts */}
+      <UserGrowthChart growthData={analytics?.userGrowth || []} />
+      <TopCountriesChart countryData={analytics?.topCountries || []} />
 
-      <div className="h-auto rounded-xl md:min-h-min">
-        <UserGrowthChart growthData={userGrowth} />
-      </div>
-
-      <div className="h-auto rounded-xl md:min-h-min">
-        <TopCountriesChart countryData={countriesData} />
-      </div>
-
-      {/* Responsive layout for KYC + Trade Status */}
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="h-auto rounded-xl md:min-h-min">
-          <VerificationChart
-            verified={userData?.verified}
-            unverified={userData?.unverified}
-          />
-        </div>
-        <div className="h-auto rounded-xl md:min-h-min">
-          <TradeStatusChart rawData={tradesData} />
-        </div>
-        <div className="h-auto rounded-xl md:min-h-min">
-          <MostTradedAssetsChart rawData={mostTradedAssetsData} />
-        </div>
-        <div className="h-auto rounded-xl md:min-h-min">
-          <PaymentMethodsChart paymentMethodsData={paymentMethodsData} />
-        </div>
+        <VerificationChart
+          verified={users?.verified ?? 0}
+          unverified={users?.unverified ?? 0}
+        />
+        <TradeStatusChart rawData={trades} />
+        <MostTradedAssetsChart rawData={analytics?.mostTradedAssets || []} />
+        <PaymentMethodsChart
+          paymentMethodsData={analytics?.paymentMethods || []}
+        />
       </div>
-    </>
+    </div>
   );
 }

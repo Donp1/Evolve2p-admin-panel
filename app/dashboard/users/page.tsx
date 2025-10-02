@@ -13,7 +13,16 @@ import {
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react";
+import {
+  ArrowUpDown,
+  ChevronDown,
+  EyeIcon,
+  Loader,
+  Loader2,
+  MoreHorizontal,
+  ShieldBanIcon,
+  UnlockIcon,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -35,17 +44,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { getUsers } from "@/lib/utils";
+import { redirect } from "next/navigation";
 
 // Mock User Data (replace with Prisma/DB data later)
-const users: User[] = Array.from({ length: 55 }, (_, i) => ({
-  id: `${i + 1}`,
-  username: `User ${i + 1}`,
-  email: `user${i + 1}@example.com`,
-  country: "Nigeria",
-  kycVerified: i % 2 === 0,
-  role: i % 5 === 0 ? "ADMIN" : "USER",
-  createdAt: new Date().toISOString(),
-}));
+// const users: User[] = Array.from({ length: 55 }, (_, i) => ({
+//   id: `${i + 1}`,
+//   username: `User ${i + 1}`,
+//   email: `user${i + 1}@example.com`,
+//   country: "Nigeria",
+//   kycVerified: i % 2 === 0,
+//   role: i % 5 === 0 ? "ADMIN" : "USER",
+//   createdAt: new Date().toISOString(),
+// }));
 
 export type User = {
   id: string;
@@ -55,6 +66,9 @@ export type User = {
   kycVerified?: boolean;
   role: string;
   createdAt: string;
+  phone: string;
+  status: string;
+  DOB: string;
 };
 
 export const columns: ColumnDef<User>[] = [
@@ -113,17 +127,52 @@ export const columns: ColumnDef<User>[] = [
         <span className="text-red-600 font-medium">✘ Not Verified</span>
       ),
   },
-  {
-    accessorKey: "role",
-    header: "Role",
-    cell: ({ row }) => <div>{row.getValue("role")}</div>,
-  },
+  // {
+  //   accessorKey: "role",
+  //   header: "Role",
+  //   cell: ({ row }) => <div>{row.getValue("role")}</div>,
+  // },
   {
     accessorKey: "createdAt",
-    header: "Created",
+    header: "Joined",
     cell: ({ row }) => (
       <div>{new Date(row.getValue("createdAt")).toLocaleDateString()}</div>
     ),
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.getValue("status") as string;
+
+      const getStatusStyle = (status: string) => {
+        switch (status.toLowerCase()) {
+          case "active":
+            return "bg-green-100 text-green-700 border border-green-300";
+          case "suspended":
+            return "bg-yellow-100 text-yellow-700 border border-yellow-300";
+          case "banned":
+            return "bg-red-100 text-red-700 border border-red-300";
+          default:
+            return "bg-gray-100 text-gray-700 border border-gray-300";
+        }
+      };
+
+      return (
+        <span
+          className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(
+            status
+          )}`}
+        >
+          {status}
+        </span>
+      );
+    },
+  },
+  {
+    accessorKey: "phone",
+    header: "Phone",
+    cell: ({ row }) => <div>{row.getValue("phone")}</div>,
   },
   {
     id: "actions",
@@ -141,9 +190,25 @@ export const columns: ColumnDef<User>[] = [
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
+              onClick={() => redirect(`/dashboard/users/${user.id}`)}
+            >
+              <EyeIcon />
+              <span>View</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
               onClick={() => navigator.clipboard.writeText(user.id)}
             >
-              Copy User ID
+              <ShieldBanIcon />
+
+              <span className="text-red-500 font-bold">Suspend</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-green-500 font-bold"
+              onClick={() => navigator.clipboard.writeText(user.id)}
+            >
+              <UnlockIcon />
+
+              <span className="text-green-500 font-bold">Active</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem>View user</DropdownMenuItem>
@@ -159,6 +224,8 @@ export const columns: ColumnDef<User>[] = [
 ];
 
 export default function UsersTable() {
+  const [users, setUsers] = React.useState<User[]>([]);
+  const [loading, setLoading] = React.useState(false);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -191,117 +258,145 @@ export default function UsersTable() {
     },
   });
 
+  React.useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const res = await getUsers();
+
+      if (res?.error) {
+        console.log(res?.message);
+        return;
+      }
+
+      setUsers(res?.users);
+      console.log(res?.users);
+      setLoading(false);
+    })();
+  }, []);
+
   return (
-    <div className="w-full">
-      {/* Filters & Columns Toggle */}
-      <div className="flex items-center py-4">
-        <Input
-          placeholder="Filter emails..."
-          value={(table.getColumn("email")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("email")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Columns <ChevronDown />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => (
-                <DropdownMenuCheckboxItem
-                  key={column.id}
-                  className="capitalize"
-                  checked={column.getIsVisible()}
-                  onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                >
-                  {column.id}
-                </DropdownMenuCheckboxItem>
-              ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      {/* Table */}
-      <div className="overflow-hidden rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
+    <>
+      {loading ? (
+        <div className="w-full h-full flex items-center justify-center">
+          <Loader className="animate-spin" size={40} />
+        </div>
+      ) : (
+        <div className="w-full">
+          {/* Filters & Columns Toggle */}
+          <div className="flex items-center py-4">
+            <Input
+              placeholder="Filter emails..."
+              value={
+                (table.getColumn("email")?.getFilterValue() as string) ?? ""
+              }
+              onChange={(event) =>
+                table.getColumn("email")?.setFilterValue(event.target.value)
+              }
+              className="max-w-sm"
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="ml-auto">
+                  Columns <ChevronDown />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
                   ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="text-muted-foreground flex-1 text-sm">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
+          {/* Table */}
+          <div className="overflow-hidden rounded-md border">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && "selected"}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
+                      No results.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination */}
+          <div className="flex items-center justify-end space-x-2 py-4">
+            <div className="text-muted-foreground flex-1 text-sm">
+              {table.getFilteredSelectedRowModel().rows.length} of{" "}
+              {table.getFilteredRowModel().rows.length} row(s) selected.
+            </div>
+            <div className="space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
         </div>
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 }

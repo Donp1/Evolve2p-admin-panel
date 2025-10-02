@@ -1,27 +1,15 @@
 "use client";
 import { AppSidebar } from "@/components/app-sidebar";
-import { DarkModeToggle } from "@/components/DarkModeToggle";
-import { LineChartInteractive } from "@/components/LineChart";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { useAlert } from "@/hooks/useAlert";
-import { useAuthStore } from "@/hooks/useAuth";
-import { checkToken } from "@/lib/utils";
-import { Bell, Loader } from "lucide-react";
+import { Bell } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect } from "react";
+import { Toaster } from "sonner";
 
 export default function Layout({
   children,
@@ -30,53 +18,12 @@ export default function Layout({
 }>) {
   const router = useRouter();
 
-  const { openAlert } = useAlert();
-
-  const [loading, setLoading] = useState(false);
-  const setUser = useAuthStore((state) => state.setUser);
-
-  useLayoutEffect(() => {
-    const storedToken = localStorage.getItem("authToken");
-    if (!storedToken) {
+  useEffect(() => {
+    const authToken = localStorage.getItem("authToken");
+    if (!authToken) {
       router.replace("/");
     }
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      const res = await checkToken();
-      if (res?.error) {
-        openAlert({
-          actions: [
-            {
-              label: "Login",
-              onClick() {
-                router.replace("/");
-              },
-            },
-          ],
-          message: res?.message,
-          title: "Error",
-          type: "error",
-        });
-        setLoading(false);
-        return;
-      }
-
-      if (res?.success) {
-        setUser(res?.user);
-        setLoading(false);
-      }
-    })();
-  }, []);
-
-  if (loading)
-    return (
-      <div className="w-screen h-screen flex items-center justify-center">
-        <Loader className="animate-spin size-10" />
-      </div>
-    );
+  }, [router]);
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -97,6 +44,7 @@ export default function Layout({
         </header>
 
         <div className="flex overflow-y-auto flex-1 flex-col gap-4 p-4 pt-5">
+          <Toaster richColors position="top-right" closeButton />
           {children}
         </div>
       </SidebarInset>
