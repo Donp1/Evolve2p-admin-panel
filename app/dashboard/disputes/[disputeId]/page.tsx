@@ -24,37 +24,14 @@ import {
   Loader2Icon,
 } from "lucide-react";
 import ChatDialog from "@/components/ChatDialog";
-import { getDispute } from "@/lib/utils";
+import { getDispute, resolveDispute } from "@/lib/utils";
 import { formatId } from "@/constant";
-
-// Mock dispute data
-// const dispute = {
-//   id: "DISP-12345",
-//   status: "OPEN",
-//   reason: "Payment not received",
-//   description:
-//     "Buyer claims to have sent the payment but seller has not confirmed.",
-//   openedBy: { id: "u1", username: "john_doe" },
-//   trade: {
-//     id: "TRADE-98765",
-//     buyer: { id: "u1", username: "john_doe" },
-//     seller: { id: "u2", username: "jane_smith" },
-//     amountFiat: 500,
-//     amountCrypto: 0.01,
-//     currency: "BTC",
-//   },
-//   evidence: [
-//     { id: 1, fileName: "screenshot1.png", url: "/placeholder.svg" },
-//     { id: 2, fileName: "receipt.pdf", url: "/placeholder.svg" },
-//   ],
-//   createdAt: "2025-09-25T14:30:00Z",
-// };
+import Link from "next/link";
 
 export default function DisputeDetailsPage() {
   const router = useRouter();
   const [openResolve, setOpenResolve] = useState(false);
   const [openChat, setOpenChat] = useState(false);
-  const [resolutionNote, setResolutionNote] = useState("");
   const [resolving, setResolving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [dispute, setDispute] = useState<any>(null);
@@ -80,15 +57,23 @@ export default function DisputeDetailsPage() {
     })();
   }, []);
 
-  const handleResolve = async (action: "buyer" | "seller") => {
+  const handleResolve = async (action: "BUYER" | "SELLER") => {
     setResolving(true);
-    await new Promise((r) => setTimeout(r, 1200)); // mock delay
+    const res = await resolveDispute(disputeId, action);
+    if (res?.error) {
+      toast.error(res?.message);
+      setResolving(false);
+      return;
+    }
 
-    toast.success(
-      `Dispute resolved: Escrow released to ${
-        action === "buyer" ? "Buyer" : "Seller"
-      }`
-    );
+    if (res?.success) {
+      toast.success(
+        `Dispute resolved: Escrow released to ${
+          action === "BUYER" ? "Buyer" : "Seller"
+        }`
+      );
+    }
+
     setResolving(false);
     setOpenResolve(false);
     router.refresh();
@@ -160,16 +145,28 @@ export default function DisputeDetailsPage() {
               <p>
                 <strong>Trade ID:</strong> {formatId(dispute?.trade?.id)}
               </p>
-              <p>
-                <strong>Buyer:</strong> @{dispute?.trade?.buyer?.username}
-              </p>
-              <p>
-                <strong>Seller:</strong> @{dispute?.trade?.seller?.username}
-              </p>
+              <div>
+                <strong>Buyer:</strong>{" "}
+                <Link
+                  className=""
+                  href={`/dashboard/users/${dispute?.trade?.buyer?.id}`}
+                >
+                  @{dispute?.trade?.buyer?.username}
+                </Link>
+              </div>
+              <div>
+                <strong>Seller:</strong>{" "}
+                <Link
+                  className=""
+                  href={`/dashboard/users/${dispute?.trade?.buyer?.id}`}
+                >
+                  @{dispute?.trade?.seller?.username}
+                </Link>
+              </div>
               <p>
                 <strong>Amount:</strong> {dispute?.trade?.offer?.currency}{" "}
-                {dispute?.trade?.amountFiat} ({dispute?.trade?.amountCrypto}{" "}
-                {dispute?.trade?.offer?.crypto})
+                {Number(dispute?.trade?.amountFiat).toLocaleString()} (
+                {dispute?.trade?.amountCrypto} {dispute?.trade?.offer?.crypto})
               </p>
             </CardContent>
           </Card>
@@ -223,29 +220,16 @@ export default function DisputeDetailsPage() {
                 <MessageSquare size={16} />
                 View Chat
               </Button>
-              <Button
-                variant="destructive"
-                className="flex items-center gap-2"
-                onClick={() => toast.error("Dispute cancelled")}
-              >
-                <XCircle size={16} />
-                Cancel Dispute
-              </Button>
-              <Button
-                className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
-                onClick={() => setOpenResolve(true)}
-              >
-                <CheckCircle2 size={16} />
-                Resolve Dispute
-              </Button>
-              {/* <Button
-                variant="outline"
-                className="flex items-center gap-2"
-                onClick={() => toast.info("Escrow action triggered")}
-              >
-                <ArrowLeftRight size={16} />
-                Escrow Actions
-              </Button> */}
+
+              {dispute?.status === "OPEN" && (
+                <Button
+                  className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+                  onClick={() => setOpenResolve(true)}
+                >
+                  <CheckCircle2 size={16} />
+                  Resolve Dispute
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -253,38 +237,44 @@ export default function DisputeDetailsPage() {
 
       {/* Resolve Dispute Modal */}
       <Dialog open={openResolve} onOpenChange={setOpenResolve}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Resolve Dispute</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Add a resolution note and choose who should receive the escrowed
-              funds.
+        <DialogContent className="sm:max-w-md dark:bg-neutral-900">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-lg font-semibold">
+              Resolve Dispute
+            </DialogTitle>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              Please choose who should receive the funds from escrow. This
+              action is final and cannot be undone.
             </p>
-            <Textarea
-              value={resolutionNote}
-              onChange={(e) => setResolutionNote(e.target.value)}
-              placeholder="Write resolution notes..."
-            />
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white h-20 rounded-xl flex flex-col gap-1 shadow-lg"
+              disabled={resolving}
+              onClick={() => handleResolve("BUYER")}
+            >
+              {resolving ? "Resolving..." : "✅ Award Buyer"}
+              <span className="text-xs opacity-80">Funds go to buyer</span>
+            </Button>
+
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white h-20 rounded-xl flex flex-col gap-1 shadow-lg"
+              disabled={resolving}
+              onClick={() => handleResolve("SELLER")}
+            >
+              {resolving ? "Resolving..." : "🏷️ Award Seller"}
+              <span className="text-xs opacity-80">Funds go to seller</span>
+            </Button>
           </div>
-          <DialogFooter className="flex gap-2">
-            <Button variant="outline" onClick={() => setOpenResolve(false)}>
+
+          <DialogFooter className="flex justify-between mt-4">
+            <Button
+              variant="outline"
+              className="rounded-lg"
+              onClick={() => setOpenResolve(false)}
+            >
               Cancel
-            </Button>
-            <Button
-              className="bg-green-600 hover:bg-green-700 text-white"
-              disabled={resolving}
-              onClick={() => handleResolve("buyer")}
-            >
-              {resolving ? "Resolving..." : "Award Buyer"}
-            </Button>
-            <Button
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              disabled={resolving}
-              onClick={() => handleResolve("seller")}
-            >
-              {resolving ? "Resolving..." : "Award Seller"}
             </Button>
           </DialogFooter>
         </DialogContent>

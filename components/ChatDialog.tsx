@@ -10,8 +10,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SendHorizonal } from "lucide-react";
+import { Loader2Icon, SendHorizonal } from "lucide-react";
+import { sendChat } from "@/lib/utils";
+import { toast } from "sonner";
+import { io, Socket } from "socket.io-client";
 
+let socket: Socket;
 interface ApiMessage {
   id: string;
   chatId: string;
@@ -44,7 +48,6 @@ export default function ChatDialog({
   sellerId: string;
   buyerId: string;
 }) {
-  console.log(chat);
   // ✅ Transform backend API messages → UI messages
   const [messages, setMessages] = useState<ChatMessage[]>(
     chat?.messages?.map((msg: any) => ({
@@ -65,20 +68,50 @@ export default function ChatDialog({
 
   const [newMessage, setNewMessage] = useState("");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const handleSend = () => {
-    if (!newMessage.trim()) return;
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
+  useEffect(() => {
+    socket = io("https://evolve2p-backend.onrender.com", {
+      transports: ["websocket"], // ensure websocket transport
+    });
+
+    socket.on("connect", () => {
+      console.log("🔌 Connected:", socket.id);
+      socket.emit("join_chat", chat?.id);
+    });
+
+    socket.on("new_message", (msg) => {
+      const formattedMsg: ChatMessage = {
+        id: msg?.id,
         sender: "admin",
-        content: newMessage,
-        timestamp: new Date().toLocaleTimeString(),
-      },
-    ]);
-    setNewMessage("");
+        content: msg?.content ?? undefined,
+        imageUrl: msg?.attachment ?? undefined,
+        timestamp: new Date(msg?.createdAt).toLocaleTimeString(),
+      };
+
+      setMessages((prev) => [...prev, formattedMsg]);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  const handleSend = async () => {
+    setSending(true);
+    const res = await sendChat(chat?.id, newMessage);
+    if (res?.error) {
+      setSending(false);
+      toast.error(res?.message || "Failed to send message");
+      return;
+    }
+
+    if (res?.success) {
+      setSending(false);
+      toast.success("Message sent");
+      setNewMessage("");
+    }
   };
 
   // ✅ Always scroll to bottom
@@ -221,10 +254,15 @@ export default function ChatDialog({
               className="flex-1 bg-neutral-800 border-none focus-visible:ring-1 focus-visible:ring-blue-500"
             />
             <Button
+              disabled={sending || newMessage.trim() === ""}
               onClick={handleSend}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white disabled:cursor-not-allowed"
             >
-              <SendHorizonal className="h-5 w-5" />
+              {sending ? (
+                <Loader2Icon className="w-5 h-5 animate-spin" />
+              ) : (
+                <SendHorizonal className="h-5 w-5" />
+              )}
             </Button>
           </div>
         </DialogContent>

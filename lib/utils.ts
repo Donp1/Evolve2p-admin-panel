@@ -350,3 +350,54 @@ export const getDispute = async (disputeId: string) => {
     console.log(error);
   }
 };
+
+export const resolveDispute = async (
+  disputeId: string,
+  winner: "BUYER" | "SELLER"
+) => {
+  const token = localStorage.getItem("authToken");
+  if (!token) return;
+
+  try {
+    const res = await fetch(
+      base_url + "/api/admin/resolve-dispute/" + disputeId,
+      {
+        method: "POST",
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+          "Content-type": "application/json",
+        },
+        body: JSON.stringify({
+          winner,
+        }),
+      }
+    );
+
+    return res.json();
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const sendChat = async (chatId: string, content: string) => {
+  const token = localStorage.getItem("authToken");
+  if (!token) return;
+
+  try {
+    const res = await fetch(base_url + "/api/admin/send-chat", {
+      method: "POST",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : "",
+        "Content-type": "application/json",
+      },
+      body: JSON.stringify({
+        chatId,
+        content,
+      }),
+    });
+
+    return res.json();
+  } catch (error) {
+    console.log(error);
+  }
+};

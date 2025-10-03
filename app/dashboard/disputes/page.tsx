@@ -36,51 +36,11 @@ import Link from "next/link";
 import Image from "next/image";
 
 // Prisma Enum Reference
-type DisputeStatus = "OPEN" | "RESOLVED" | "REJECTED";
-
-interface Dispute {
-  id: string;
-  tradeId: string;
-  openedBy: string;
-  reason: string;
-  description?: string;
-  status: DisputeStatus;
-  evidence?: string;
-  createdAt: string;
-  resolvedAt?: string;
-}
-
-// Dummy data (replace with API call)
-const initialDisputes: Dispute[] = [
-  {
-    id: "1",
-    tradeId: "T123",
-    openedBy: "UserA",
-    reason: "Payment not received",
-    description: "Seller marked trade as paid but I never got the money.",
-    status: "OPEN",
-    evidence: "https://via.placeholder.com/150",
-    createdAt: "2025-09-20",
-  },
-  {
-    id: "2",
-    tradeId: "T124",
-    openedBy: "UserB",
-    reason: "Fake payment proof",
-    description: "Buyer uploaded a fake screenshot.",
-    status: "RESOLVED",
-    createdAt: "2025-09-21",
-    resolvedAt: "2025-09-23",
-  },
-  {
-    id: "3",
-    tradeId: "T125",
-    openedBy: "UserC",
-    reason: "Terms violation",
-    status: "REJECTED",
-    createdAt: "2025-09-22",
-  },
-];
+type DisputeStatus =
+  | "OPEN"
+  | "RESOLVED_BUYER"
+  | "RESOLVED_SELLER"
+  | "CANCELLED";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -129,21 +89,33 @@ const DisputesPage = () => {
       case "OPEN":
         return (
           <Badge variant="secondary" className="flex items-center gap-1">
-            <AlertTriangle className="w-3 h-3" /> Open
+            <AlertTriangle className="w-3 h-3 text-yellow-500" /> Open
           </Badge>
         );
-      case "RESOLVED":
+
+      case "RESOLVED_BUYER":
         return (
           <Badge variant="success" className="flex items-center gap-1">
-            <CheckCircle className="w-3 h-3" /> Resolved
+            <CheckCircle className="w-3 h-3" /> Awarded Buyer
           </Badge>
         );
-      case "REJECTED":
+
+      case "RESOLVED_SELLER":
+        return (
+          <Badge variant="success" className="flex items-center gap-1">
+            <CheckCircle className="w-3 h-3" /> Awarded Seller
+          </Badge>
+        );
+
+      case "CANCELLED":
         return (
           <Badge variant="destructive" className="flex items-center gap-1">
-            <XCircle className="w-3 h-3" /> Rejected
+            <XCircle className="w-3 h-3" /> Cancelled
           </Badge>
         );
+
+      default:
+        return null;
     }
   };
 
@@ -174,9 +146,6 @@ const DisputesPage = () => {
               }}
               className="w-64"
             />
-            <Button variant="outline">
-              <Search className="w-4 h-4 mr-2" /> Search
-            </Button>
           </div>
         </CardHeader>
 
@@ -243,16 +212,11 @@ const DisputesPage = () => {
                       </DialogContent>
                     </Dialog> */}
 
-                    {/* Resolve / Reject */}
-                    {d.status === "OPEN" && (
-                      <>
-                        <Button asChild size="sm" variant="outline">
-                          <Link href={`/dashboard/disputes/${d?.id}`}>
-                            <Eye className="w-4 h-4" />
-                          </Link>
-                        </Button>
-                      </>
-                    )}
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={`/dashboard/disputes/${d?.id}`}>
+                        <Eye className="w-4 h-4" />
+                      </Link>
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
