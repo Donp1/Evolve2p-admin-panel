@@ -63,7 +63,6 @@ const DisputesPage = () => {
       if (res?.success) {
         setLoading(false);
         setDisputes(res?.disputes);
-        console.log(res?.disputes);
       }
     })();
   }, []);

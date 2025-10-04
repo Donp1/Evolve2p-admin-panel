@@ -52,7 +52,6 @@ export default function DisputeDetailsPage() {
       if (res?.success) {
         setLoading(false);
         setDispute(res?.dispute);
-        console.log(res?.dispute?.trade?.chat);
       }
     })();
   }, []);

@@ -1,4 +1,5 @@
 import { clsx, type ClassValue } from "clsx";
+import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
 
 export const base_url = "https://evolve2p-backend.onrender.com";
@@ -7,37 +8,47 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const fetchUserGrowth = async () => {
+async function safeFetch(
+  url: string,
+  options: RequestInit = {},
+  timeout: number = 10000 // 10s timeout
+) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+
   try {
-    const res = await fetch(base_url + "/api/admin/overview"); // 🔥 adjust path if different
-    const json = await res.json();
+    const res = await fetch(url, { ...options, signal: controller.signal });
 
-    // assuming json.usersGrowth is your array
-    const formatted = json.usersGrowth.map((item: any) => ({
-      date: `${item.month} ${item.year}`, // "Jan 2025"
-      users: item.users,
-    }));
+    if (!res.ok) {
+      throw new Error(`Request failed with status ${res.status}`);
+    }
 
-    return formatted;
-  } catch (err) {
-    console.error("Failed to fetch user growth:", err);
+    return res.json();
+  } catch (err: any) {
+    console.log(err?.message || err);
+    if (err.name === "AbortError") {
+      toast.error("Request timed out. Please check your connection.");
+    } else {
+      toast.error("Network error. Please (reload) and try again.");
+    }
   } finally {
+    clearTimeout(id);
   }
-};
+}
 
 export const checkToken = async () => {
   const token = localStorage.getItem("authToken");
   if (!token) return;
 
   try {
-    const res = await fetch(base_url + "/api/check-token", {
+    const res = await safeFetch(base_url + "/api/check-token", {
       method: "POST",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
       },
     });
 
-    return res.json();
+    return res;
   } catch (error) {
     console.log(error);
   }
@@ -47,15 +58,17 @@ export const getOverview = async () => {
   const token = localStorage.getItem("authToken");
   if (!token) return;
 
+  console.log(token);
+
   try {
-    const res = await fetch(base_url + "/api/admin/overview", {
+    const res = await safeFetch(base_url + "/api/admin/overview", {
       method: "GET",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
       },
     });
 
-    return res.json();
+    return res;
   } catch (error) {
     console.log(error);
   }
@@ -66,14 +79,14 @@ export const getUsers = async () => {
   if (!token) return;
 
   try {
-    const res = await fetch(base_url + "/api/admin/users", {
+    const res = await safeFetch(base_url + "/api/admin/users", {
       method: "GET",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
       },
     });
 
-    return res.json();
+    return res;
   } catch (error) {
     console.log(error);
   }
@@ -84,14 +97,14 @@ export const getUser = async (userId: string) => {
   if (!token) return;
 
   try {
-    const res = await fetch(base_url + "/api/admin/user/" + userId, {
+    const res = await safeFetch(base_url + "/api/admin/user/" + userId, {
       method: "GET",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
       },
     });
 
-    return res.json();
+    return res;
   } catch (error) {
     console.log(error);
   }
@@ -102,7 +115,7 @@ export const performUserAction = async (actionType: string, userId: string) => {
   if (!token) return;
 
   try {
-    const res = await fetch(base_url + "/api/admin/perform-action-user", {
+    const res = await safeFetch(base_url + "/api/admin/perform-action-user", {
       method: "POST",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
@@ -114,7 +127,32 @@ export const performUserAction = async (actionType: string, userId: string) => {
       }),
     });
 
-    return res.json();
+    return res;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const resetUserPassword = async (password: string, userId: string) => {
+  const token = localStorage.getItem("authToken");
+  if (!token) return;
+
+  console.log(password, userId);
+
+  try {
+    const res = await safeFetch(base_url + "/api/admin/reset-user-password", {
+      method: "POST",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : "",
+        "Content-type": "application/json",
+      },
+      body: JSON.stringify({
+        password,
+        userId,
+      }),
+    });
+
+    return res;
   } catch (error) {
     console.log(error);
   }
@@ -125,14 +163,14 @@ export const getTrades = async () => {
   if (!token) return;
 
   try {
-    const res = await fetch(base_url + "/api/admin/get-trades", {
+    const res = await safeFetch(base_url + "/api/admin/get-trades", {
       method: "GET",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
       },
     });
 
-    return res.json();
+    return res;
   } catch (error) {
     console.log(error);
   }
@@ -143,14 +181,14 @@ export const getTransactions = async () => {
   if (!token) return;
 
   try {
-    const res = await fetch(base_url + "/api/admin/get-transactions", {
+    const res = await safeFetch(base_url + "/api/admin/get-transactions", {
       method: "GET",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
       },
     });
 
-    return res.json();
+    return res;
   } catch (error) {
     console.log(error);
   }
@@ -161,14 +199,14 @@ export const getSwaps = async () => {
   if (!token) return;
 
   try {
-    const res = await fetch(base_url + "/api/admin/get-swaps", {
+    const res = await safeFetch(base_url + "/api/admin/get-swaps", {
       method: "GET",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
       },
     });
 
-    return res.json();
+    return res;
   } catch (error) {
     console.log(error);
   }
@@ -179,14 +217,14 @@ export const getPaymentMethods = async () => {
   if (!token) return;
 
   try {
-    const res = await fetch(base_url + "/api/admin/get-payment-methods", {
+    const res = await safeFetch(base_url + "/api/admin/get-payment-methods", {
       method: "GET",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
       },
     });
 
-    return res.json();
+    return res;
   } catch (error) {
     console.log(error);
   }
@@ -197,7 +235,7 @@ export const createPaymentMethod = async (name: string) => {
   if (!token) return;
 
   try {
-    const res = await fetch(base_url + "/api/admin/create-payment-method", {
+    const res = await safeFetch(base_url + "/api/admin/create-payment-method", {
       method: "POST",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
@@ -208,7 +246,7 @@ export const createPaymentMethod = async (name: string) => {
       }),
     });
 
-    return res.json();
+    return res;
   } catch (error) {
     console.log(error);
   }
@@ -219,7 +257,7 @@ export const deletePaymentMethod = async (id: string) => {
   if (!token) return;
 
   try {
-    const res = await fetch(
+    const res = await safeFetch(
       base_url + "/api/admin/delete-payment-method/" + id,
       {
         method: "DELETE",
@@ -229,7 +267,7 @@ export const deletePaymentMethod = async (id: string) => {
       }
     );
 
-    return res.json();
+    return res;
   } catch (error) {
     console.log(error);
   }
@@ -240,14 +278,14 @@ export const deleteOffer = async (id: string) => {
   if (!token) return;
 
   try {
-    const res = await fetch(base_url + "/api/admin/delete-offer/" + id, {
+    const res = await safeFetch(base_url + "/api/admin/delete-offer/" + id, {
       method: "DELETE",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
       },
     });
 
-    return res.json();
+    return res;
   } catch (error) {
     console.log(error);
   }
@@ -261,7 +299,7 @@ export const performOfferAction = async (
   if (!token) return;
 
   try {
-    const res = await fetch(base_url + "/api/admin/perform-offer-action", {
+    const res = await safeFetch(base_url + "/api/admin/perform-offer-action", {
       method: "POST",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
@@ -273,7 +311,7 @@ export const performOfferAction = async (
       }),
     });
 
-    return res.json();
+    return res;
   } catch (error) {
     console.log(error);
   }
@@ -284,14 +322,14 @@ export const getOffers = async () => {
   if (!token) return;
 
   try {
-    const res = await fetch(base_url + "/api/admin/get-offers", {
+    const res = await safeFetch(base_url + "/api/admin/get-offers", {
       method: "GET",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
       },
     });
 
-    return res.json();
+    return res;
   } catch (error) {
     console.log(error);
   }
@@ -302,14 +340,14 @@ export const getOffer = async (offerId: string) => {
   if (!token) return;
 
   try {
-    const res = await fetch(base_url + "/api/admin/get-offer/" + offerId, {
+    const res = await safeFetch(base_url + "/api/admin/get-offer/" + offerId, {
       method: "GET",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
       },
     });
 
-    return res.json();
+    return res;
   } catch (error) {
     console.log(error);
   }
@@ -320,14 +358,14 @@ export const getDisputes = async () => {
   if (!token) return;
 
   try {
-    const res = await fetch(base_url + "/api/admin/get-disputes", {
+    const res = await safeFetch(base_url + "/api/admin/get-disputes", {
       method: "GET",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
       },
     });
 
-    return res.json();
+    return res;
   } catch (error) {
     console.log(error);
   }
@@ -338,14 +376,17 @@ export const getDispute = async (disputeId: string) => {
   if (!token) return;
 
   try {
-    const res = await fetch(base_url + "/api/admin/get-dispute/" + disputeId, {
-      method: "GET",
-      headers: {
-        Authorization: token ? `Bearer ${token}` : "",
-      },
-    });
+    const res = await safeFetch(
+      base_url + "/api/admin/get-dispute/" + disputeId,
+      {
+        method: "GET",
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      }
+    );
 
-    return res.json();
+    return res;
   } catch (error) {
     console.log(error);
   }
@@ -359,7 +400,7 @@ export const resolveDispute = async (
   if (!token) return;
 
   try {
-    const res = await fetch(
+    const res = await safeFetch(
       base_url + "/api/admin/resolve-dispute/" + disputeId,
       {
         method: "POST",
@@ -373,7 +414,7 @@ export const resolveDispute = async (
       }
     );
 
-    return res.json();
+    return res;
   } catch (error) {
     console.log(error);
   }
@@ -384,7 +425,7 @@ export const sendChat = async (chatId: string, content: string) => {
   if (!token) return;
 
   try {
-    const res = await fetch(base_url + "/api/admin/send-chat", {
+    const res = await safeFetch(base_url + "/api/admin/send-chat", {
       method: "POST",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
@@ -396,7 +437,7 @@ export const sendChat = async (chatId: string, content: string) => {
       }),
     });
 
-    return res.json();
+    return res;
   } catch (error) {
     console.log(error);
   }

@@ -14,6 +14,7 @@ import { checkToken, getOverview } from "@/lib/utils";
 import { Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 // ✅ Reusable stat card
 function StatCard({
@@ -53,17 +54,8 @@ export default function Page() {
         const checkTokenRes = await checkToken();
         if (checkTokenRes?.error) {
           localStorage.clear();
-          openAlert({
-            title: "Error",
-            type: "error",
-            message: checkTokenRes?.message,
-            actions: [
-              {
-                label: "Login",
-                onClick: () => router.replace("/"),
-              },
-            ],
-          });
+          toast.error("Session has expired kindly login.");
+          router.replace("/");
           return;
         }
 
@@ -74,22 +66,13 @@ export default function Page() {
         const res = await getOverview();
 
         if (res?.error) {
-          openAlert({
-            title: "Error",
-            type: "error",
-            message: res?.message || "Something went wrong.",
-            actions: [{ label: "Close" }],
-          });
+          toast.error(res?.message || "Something went wrong.");
           return;
         }
 
         setOverview(res);
       } catch (error: any) {
-        openAlert({
-          title: "Error",
-          type: "error",
-          message: error.message || "Unexpected error occurred.",
-        });
+        toast.error(error.message || "Unexpected error occurred.");
       } finally {
         setLoading(false);
       }

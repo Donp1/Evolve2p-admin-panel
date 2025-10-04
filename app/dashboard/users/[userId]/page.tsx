@@ -23,10 +23,11 @@ import {
   Coins,
   Banknote,
   Scale,
+  Loader2Icon,
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getUser } from "@/lib/utils";
+import { getUser, performUserAction, resetUserPassword } from "@/lib/utils";
 import { useAlert } from "@/hooks/useAlert";
 import {
   Dialog,
@@ -39,30 +40,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor } from "@/components/RichTextEditor";
-
-// 🔹 Demo user trades
-const demoTrades = [
-  {
-    id: "t1",
-    role: "Buyer",
-    crypto: "USDT",
-    amountFiat: 10000,
-    amountCrypto: 9.8,
-    status: "COMPLETED",
-    escrowReleased: true,
-    createdAt: "2025-09-14T09:00:00Z",
-  },
-  {
-    id: "t2",
-    role: "Seller",
-    crypto: "BTC",
-    amountFiat: 500,
-    amountCrypto: 0.012,
-    status: "PENDING",
-    escrowReleased: false,
-    createdAt: "2025-09-15T11:30:00Z",
-  },
-];
+import { toast } from "sonner";
 
 export default function UserDetailsPage() {
   const { userId } = useParams<{ userId: string }>();
@@ -74,8 +52,11 @@ export default function UserDetailsPage() {
   const [openSendMail, setOpenSendMail] = useState(false);
   const [emailMessage, setEmailMessage] = useState("");
   const [emailSubject, setEmailSubject] = useState("");
-
-  const { openAlert } = useAlert();
+  const [isPerformingAction, setIsPerformingAction] = useState(false);
+  const [isReseting, setIsReseting] = useState(false);
+  const [reload, setReload] = useState(0);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -84,24 +65,64 @@ export default function UserDetailsPage() {
 
       if (res?.error) {
         setLoading(false);
-        openAlert({
-          message: res?.message,
-          title: "Error",
-          type: "error",
-          actions: [{ label: "Close", onClick() {} }],
-        });
+        toast.error(res?.message || "Failed to fetch user");
         return;
       }
 
       if (res?.success) {
         setUser(res?.user);
-        console.log(res?.user);
         setTrades([...res?.user?.tradesAsBuyer, ...res?.user?.tradesAsSeller]);
         setOffers(res?.user?.offers);
         setLoading(false);
       }
     })();
-  }, [userId]);
+  }, [userId, reload]);
+
+  const handleUserAction = async (action: string) => {
+    setIsPerformingAction(true);
+    const res = await performUserAction(action, userId);
+    if (res?.error) {
+      setIsPerformingAction(false);
+      toast.error(res?.message || "Action failed");
+      return;
+    }
+
+    if (res?.success) {
+      setUser(res?.user);
+      toast.success(res?.message || "Action successful");
+      setIsPerformingAction(false);
+      setReload((prev) => prev + 1);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    setIsReseting(true);
+    if (!newPassword || !confirmPassword) {
+      setIsReseting(false);
+      toast.error("Fill in all fields");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setIsReseting(false);
+      toast.error("Passwords do not match");
+      return;
+    }
+    const res = await resetUserPassword(newPassword, userId);
+    if (res?.error) {
+      setIsReseting(false);
+      toast.error(res?.message || "Unable to reset password");
+      return;
+    }
+
+    if (res?.success) {
+      setIsReseting(false);
+      toast.success(res?.message || "Passwored reset successful");
+      setOpenResetPassword(false);
+      setNewPassword("");
+      setConfirmPassword("");
+    }
+  };
 
   if (loading) {
     return (
@@ -357,12 +378,28 @@ export default function UserDetailsPage() {
               Reset Password
             </Button>
             {user?.status?.toLowerCase() === "active" ? (
-              <Button className="bg-red-600 hover:bg-red-700 text-white">
-                Suspend User
+              <Button
+                disabled={isPerformingAction}
+                onClick={() => handleUserAction("suspend")}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {isPerformingAction ? (
+                  <Loader2Icon className="w-4 h-4 animate-spin" />
+                ) : (
+                  "Suspend User"
+                )}
               </Button>
             ) : (
-              <Button className="bg-green-600 hover:bg-green-700 text-white">
-                Activate User
+              <Button
+                disabled={isPerformingAction}
+                onClick={() => handleUserAction("activate")}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                {isPerformingAction ? (
+                  <Loader2Icon className="w-4 h-4 animate-spin" />
+                ) : (
+                  "Activate User"
+                )}
               </Button>
             )}
           </div>
@@ -425,8 +462,8 @@ export default function UserDetailsPage() {
                   id="newPassword"
                   type="password"
                   placeholder="Enter new password"
-                  // value={newPassword}
-                  // onChange={(e) => setNewPassword(e.target.value)}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
                 />
               </div>
               <br />
@@ -436,8 +473,8 @@ export default function UserDetailsPage() {
                   id="confirmPassword"
                   type="password"
                   placeholder="Confirm new password"
-                  // value={confirmPassword}
-                  // onChange={(e) => setConfirmPassword(e.target.value)}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                 />
               </div>
             </div>
@@ -446,10 +483,15 @@ export default function UserDetailsPage() {
           <DialogFooter>
             <Button onClick={() => setOpenResetPassword(false)}>Cancel</Button>
             <Button
+              disabled={isReseting}
               className="bg-yellow-600 hover:bg-yellow-700 text-white"
-              // onClick={handleResetPassword}
+              onClick={handleResetPassword}
             >
-              Reset Password
+              {isReseting ? (
+                <Loader2Icon className="w-4 h-4 animate-spin" />
+              ) : (
+                "Reset Password"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
