@@ -16,6 +16,7 @@ import {
 import {
   ArrowUpDown,
   ChevronDown,
+  Eye,
   EyeIcon,
   Loader,
   Loader2,
@@ -46,6 +47,7 @@ import {
 } from "@/components/ui/table";
 import { getUsers } from "@/lib/utils";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 // Mock User Data (replace with Prisma/DB data later)
 // const users: User[] = Array.from({ length: 55 }, (_, i) => ({
@@ -180,44 +182,11 @@ export const columns: ColumnDef<User>[] = [
     cell: ({ row }) => {
       const user = row.original;
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => redirect(`/dashboard/users/${user.id}`)}
-            >
-              <EyeIcon />
-              <span>View</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(user.id)}
-            >
-              <ShieldBanIcon />
-
-              <span className="text-red-500 font-bold">Suspend</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-green-500 font-bold"
-              onClick={() => navigator.clipboard.writeText(user.id)}
-            >
-              <UnlockIcon />
-
-              <span className="text-green-500 font-bold">Active</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>View user</DropdownMenuItem>
-            <DropdownMenuItem>Edit user</DropdownMenuItem>
-            <DropdownMenuItem className="text-red-600">
-              Delete user
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button asChild size="sm" variant="outline">
+          <Link href={`/dashboard/users/${user?.id}`}>
+            <Eye className="w-4 h-4" />
+          </Link>
+        </Button>
       );
     },
   },

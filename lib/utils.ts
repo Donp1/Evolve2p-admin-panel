@@ -14,25 +14,28 @@ async function safeFetch(
   timeout: number = 10000 // 10s timeout
 ) {
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
+  // const id = setTimeout(() => controller.abort(), timeout);
 
   try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
+    const res = await fetch(url, { ...options });
+
+    const data = await res.json();
 
     if (!res.ok) {
-      throw new Error(`Request failed with status ${res.status}`);
+      throw new Error(data.message || "Something went wrong");
     }
 
-    return res.json();
+    return data;
   } catch (err: any) {
-    console.log(err?.message || err);
     if (err.name === "AbortError") {
-      toast.error("Request timed out. Please check your connection.");
+      console.log(err?.message || err);
+      return { error: true, message: err?.message || err };
     } else {
-      toast.error("Network error. Please (reload) and try again.");
+      console.log(err?.message || err);
+      return { error: true, message: err?.message || err };
     }
   } finally {
-    clearTimeout(id);
+    // clearTimeout(id);
   }
 }
 
@@ -169,6 +172,46 @@ export const getTrades = async () => {
         Authorization: token ? `Bearer ${token}` : "",
       },
     });
+
+    return res;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const getTrade = async (tradeId: string) => {
+  const token = localStorage.getItem("authToken");
+  if (!token) return;
+
+  try {
+    const res = await safeFetch(base_url + "/api/admin/get-trade/" + tradeId, {
+      method: "GET",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+    });
+
+    return res;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const cancleTrade = async (tradeId: string) => {
+  const token = localStorage.getItem("authToken");
+  if (!token) return;
+
+  try {
+    const res = await safeFetch(
+      base_url + "/api/admin/cancle-trade/" + tradeId,
+      {
+        method: "POST",
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+          "Content-type": "application/json",
+        },
+      }
+    );
 
     return res;
   } catch (error) {

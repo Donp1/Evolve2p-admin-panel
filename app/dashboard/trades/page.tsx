@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { getTrades } from "@/lib/utils";
 import { formatDate } from "../payment_method/page";
+import Link from "next/link";
 
 // Trade status enum
 type TradeStatus =
@@ -221,64 +222,13 @@ const TradesPage = () => {
                       {trade.status}
                     </Badge>
                   </TableCell>
-                  {/* <TableCell>
-                    {trade.paymentProof ? (
-                      <a
-                        href={trade.paymentProof}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary underline text-xs"
-                      >
-                        View Proof
-                      </a>
-                    ) : (
-                      "-"
-                    )}
-                  </TableCell> */}
+
                   <TableCell>{formatDate(trade?.createdAt)}</TableCell>
                   <TableCell className="text-right flex gap-2 justify-end">
-                    <Button size="sm" variant="outline">
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                    {trade?.status === "PENDING" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          handleAction(trade?.id, "Marked as Paid")
-                        }
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                      </Button>
-                    )}
-                    {trade?.status === "PAID" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          handleAction(trade?.id, "Released Escrow")
-                        }
-                      >
-                        <Unlock className="w-4 h-4" />
-                      </Button>
-                    )}
-                    {trade?.status === "DISPUTED" && (
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() =>
-                          handleAction(trade?.id, "Resolved Dispute")
-                        }
-                      >
-                        <Gavel className="w-4 h-4" />
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleAction(trade?.id, "Deleted")}
-                    >
-                      <Trash2 className="w-4 h-4" />
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={`/dashboard/trades/${trade?.id}`}>
+                        <Eye className="w-4 h-4" />
+                      </Link>
                     </Button>
                   </TableCell>
                 </TableRow>
