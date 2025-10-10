@@ -27,7 +27,13 @@ import {
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getUser, performUserAction, resetUserPassword } from "@/lib/utils";
+import {
+  cancleTrade,
+  getUser,
+  performOfferAction,
+  performUserAction,
+  resetUserPassword,
+} from "@/lib/utils";
 import { useAlert } from "@/hooks/useAlert";
 import {
   Dialog,
@@ -54,6 +60,7 @@ export default function UserDetailsPage() {
   const [emailSubject, setEmailSubject] = useState("");
   const [isPerformingAction, setIsPerformingAction] = useState(false);
   const [isReseting, setIsReseting] = useState(false);
+  const [cancelId, setCancelId] = useState("");
   const [reload, setReload] = useState(0);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -121,6 +128,71 @@ export default function UserDetailsPage() {
       setOpenResetPassword(false);
       setNewPassword("");
       setConfirmPassword("");
+    }
+  };
+
+  const handleToggleStatus = async (id: string) => {
+    // 1. Optimistically update UI
+    setOffers((prev: any) =>
+      prev.map((offer: any) =>
+        offer.id === id
+          ? {
+              ...offer,
+              status: offer.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
+            }
+          : offer
+      )
+    );
+
+    // 2. Decide action type
+    const actionType =
+      offers.find((offer: any) => offer.id === id)?.status === "ACTIVE"
+        ? "inactive"
+        : "active";
+
+    try {
+      // 3. Call backend
+      const res = await performOfferAction(actionType, id);
+
+      if (res?.error) {
+        toast.error(res?.message);
+        return;
+      }
+
+      if (res?.success) {
+        toast.success(res?.message);
+        return;
+      }
+    } catch (error) {
+      console.error("Failed to update offer:", error);
+
+      // 4. Rollback on error
+      setOffers((prev: any) =>
+        prev.map((offer: any) =>
+          offer.id === id
+            ? {
+                ...offer,
+                status: offer.status === "ACTIVE" ? "INACTIVE" : "ACTIVE", // revert back
+              }
+            : offer
+        )
+      );
+    }
+  };
+
+  const handleCancleTrade = async (tradeId: string) => {
+    setCancelId(tradeId);
+    const res = await cancleTrade(tradeId);
+    if (res?.error) {
+      setCancelId("");
+      toast.error(res?.message || "Unable to cancel trade");
+      return;
+    }
+
+    if (res?.success) {
+      setCancelId("");
+      toast.success(res?.message || "Trade cancelled successfully");
+      setReload((prev) => prev + 1);
     }
   };
 
@@ -255,22 +327,14 @@ export default function UserDetailsPage() {
                     </CardContent>
                     <CardFooter className="flex gap-2">
                       <Button
+                        className=""
                         size="sm"
-                        className="bg-green-600 hover:bg-green-700"
+                        variant={
+                          offer?.status === "ACTIVE" ? "destructive" : "success"
+                        }
+                        onClick={() => handleToggleStatus(offer?.id)}
                       >
-                        Activate
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="bg-yellow-600 hover:bg-yellow-700"
-                      >
-                        Suspend
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="bg-red-600 hover:bg-red-700 text-white"
-                      >
-                        Delete
+                        {offer?.status === "ACTIVE" ? "Deactivate" : "Activate"}
                       </Button>
                     </CardFooter>
                   </Card>
@@ -319,22 +383,16 @@ export default function UserDetailsPage() {
                     </CardContent>
                     <CardFooter className="flex gap-2">
                       <Button
-                        size="sm"
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        Mark Completed
-                      </Button>
-                      <Button
+                        disabled={cancelId != ""}
+                        onClick={() => handleCancleTrade(trade?.id)}
                         size="sm"
                         className="bg-yellow-600 hover:bg-yellow-700"
                       >
-                        Cancel
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="bg-blue-600 hover:bg-blue-700"
-                      >
-                        Release Escrow
+                        {cancelId != "" && cancelId == trade?.id ? (
+                          <Loader2Icon className="w-4 h-4 animate-spin" />
+                        ) : (
+                          "Cancel Trade"
+                        )}
                       </Button>
                     </CardFooter>
                   </Card>

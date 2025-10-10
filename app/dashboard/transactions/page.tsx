@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { getTransactions } from "@/lib/utils";
 import { formatDate } from "../payment_method/page";
+import Link from "next/link";
 
 // Transaction type
 type TransactionStatus = "PENDING" | "COMPLETED" | "FAILED";
@@ -169,7 +170,9 @@ const TransactionsPage = () => {
             <TableBody>
               {paginated.map((tx) => (
                 <TableRow key={tx?.id}>
-                  <TableCell className="font-medium">{tx?.user}</TableCell>
+                  <TableCell className="font-medium">
+                    {tx?.user?.username}
+                  </TableCell>
                   <TableCell>{tx?.wallet?.currency} Wallet</TableCell>
                   <TableCell>
                     <Badge
@@ -210,22 +213,10 @@ const TransactionsPage = () => {
                   </TableCell>
                   <TableCell>{formatDate(tx?.createdAt)}</TableCell>
                   <TableCell className="text-right flex gap-2 justify-end">
-                    <Button size="sm" variant="outline">
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleCopy(tx?.txHash)}
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDelete(tx?.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={`/dashboard/transactions/${tx?.id}`}>
+                        <Eye className="w-4 h-4" />
+                      </Link>
                     </Button>
                   </TableCell>
                 </TableRow>

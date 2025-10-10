@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { getSwaps } from "@/lib/utils";
 import { toast } from "sonner";
 import { formatDate } from "../payment_method/page";
+import Link from "next/link";
 
 // Dummy data (replace with API fetch)
 const initialSwaps = [
@@ -143,15 +144,10 @@ const SwapsPage = () => {
                   <TableCell>{swap?.toAmount}</TableCell>
                   <TableCell>{formatDate(swap?.createdAt)}</TableCell>
                   <TableCell className="text-right flex gap-2 justify-end">
-                    <Button size="sm" variant="outline">
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDelete(swap?.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={`/dashboard/swaps/${swap?.id}`}>
+                        <Eye className="w-4 h-4" />
+                      </Link>
                     </Button>
                   </TableCell>
                 </TableRow>

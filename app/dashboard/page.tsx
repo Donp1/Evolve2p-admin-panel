@@ -39,7 +39,6 @@ function StatCard({
 }
 
 export default function Page() {
-  const { openAlert } = useAlert();
   const [loading, setLoading] = useState(true);
   const [overview, setOverview] = useState<any>(null);
 

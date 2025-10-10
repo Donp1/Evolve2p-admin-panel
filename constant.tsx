@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+
 // utils/formatters.ts
 export const formatId = (id: string, start: number = 6, end: number = 4) => {
   if (!id) return "";
@@ -10,3 +12,12 @@ export const formatUUID = (uuid: string) => formatId(uuid, 8, 6);
 export const formatTxHash = (hash: string) => formatId(hash, 10, 8);
 
 export const formatAddress = (address: string) => formatId(address, 6, 6);
+
+export const copyToClipboard = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard!");
+  } catch (err) {
+    console.error("Failed to copy:", err);
+  }
+};

@@ -31,6 +31,9 @@ async function safeFetch(
       console.log(err?.message || err);
       return { error: true, message: err?.message || err };
     } else {
+      if (String(err?.message).includes("jwt expired")) {
+        window.location.replace("/");
+      }
       console.log(err?.message || err);
       return { error: true, message: err?.message || err };
     }
@@ -60,8 +63,6 @@ export const checkToken = async () => {
 export const getOverview = async () => {
   const token = localStorage.getItem("authToken");
   if (!token) return;
-
-  console.log(token);
 
   try {
     const res = await safeFetch(base_url + "/api/admin/overview", {
@@ -237,12 +238,51 @@ export const getTransactions = async () => {
   }
 };
 
+export const getTransaction = async (transactionId: string) => {
+  const token = localStorage.getItem("authToken");
+  if (!token) return;
+
+  try {
+    const res = await safeFetch(
+      base_url + "/api/admin/get-transaction/" + transactionId,
+      {
+        method: "GET",
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      }
+    );
+
+    return res;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 export const getSwaps = async () => {
   const token = localStorage.getItem("authToken");
   if (!token) return;
 
   try {
     const res = await safeFetch(base_url + "/api/admin/get-swaps", {
+      method: "GET",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+    });
+
+    return res;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const getSwap = async (swapId: string) => {
+  const token = localStorage.getItem("authToken");
+  if (!token) return;
+
+  try {
+    const res = await safeFetch(base_url + "/api/admin/get-swap/" + swapId, {
       method: "GET",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
