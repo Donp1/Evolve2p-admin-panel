@@ -238,7 +238,6 @@ export default function UsersTable() {
       }
 
       setUsers(res?.users);
-      console.log(res?.users);
       setLoading(false);
     })();
   }, []);

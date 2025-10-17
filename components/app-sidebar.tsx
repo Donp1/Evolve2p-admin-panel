@@ -22,6 +22,7 @@ import {
   SquareTerminal,
   User2,
   User2Icon,
+  UserCog2,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -115,6 +116,11 @@ const data = {
       title: "Disputes",
       url: "/dashboard/disputes",
       icon: ShieldAlert,
+    },
+    {
+      title: "Admins",
+      url: "/dashboard/admins",
+      icon: UserCog2,
     },
     {
       title: "Settings",

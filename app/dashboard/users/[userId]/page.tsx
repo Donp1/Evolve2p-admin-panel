@@ -33,6 +33,7 @@ import {
   performOfferAction,
   performUserAction,
   resetUserPassword,
+  sendEmail,
 } from "@/lib/utils";
 import { useAlert } from "@/hooks/useAlert";
 import {
@@ -47,6 +48,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { toast } from "sonner";
+import { CKEditor } from "@ckeditor/ckeditor5-react";
+import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 
 export default function UserDetailsPage() {
   const { userId } = useParams<{ userId: string }>();
@@ -56,8 +59,10 @@ export default function UserDetailsPage() {
   const [loading, setLoading] = useState(false);
   const [openResetPassword, setOpenResetPassword] = useState(false);
   const [openSendMail, setOpenSendMail] = useState(false);
+  const [isSendingMail, setIsSendingMail] = useState(false);
   const [emailMessage, setEmailMessage] = useState("");
   const [emailSubject, setEmailSubject] = useState("");
+  const [emailTitle, setEmailTitle] = useState("");
   const [isPerformingAction, setIsPerformingAction] = useState(false);
   const [isReseting, setIsReseting] = useState(false);
   const [cancelId, setCancelId] = useState("");
@@ -193,6 +198,30 @@ export default function UserDetailsPage() {
       setCancelId("");
       toast.success(res?.message || "Trade cancelled successfully");
       setReload((prev) => prev + 1);
+    }
+  };
+
+  const handleSendMail = async () => {
+    setIsSendingMail(true);
+    const res = await sendEmail(
+      user?.email,
+      emailSubject,
+      emailTitle,
+      emailMessage
+    );
+
+    if (res?.error) {
+      setIsSendingMail(false);
+      toast.error(res?.message);
+      return;
+    }
+
+    if (res?.success) {
+      setIsSendingMail(false);
+      setEmailTitle("");
+      setEmailMessage("");
+      setEmailSubject("");
+      toast.success(res?.message);
     }
   };
 
@@ -475,7 +504,24 @@ export default function UserDetailsPage() {
               <Label htmlFor="subject" className="mb-2">
                 Subject
               </Label>
-              <Input id="subject" placeholder="Enter subject" />
+              <Input
+                defaultValue={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+                id="subject"
+                placeholder="Enter subject"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="subject" className="mb-2">
+                Title
+              </Label>
+              <Input
+                defaultValue={emailTitle}
+                onChange={(e) => setEmailTitle(e.target.value)}
+                id="subject"
+                placeholder="Enter title"
+              />
             </div>
 
             <div>
@@ -484,17 +530,27 @@ export default function UserDetailsPage() {
               </Label>
 
               <Textarea
+                defaultValue={emailMessage}
+                onChange={(e) => setEmailMessage(e.target.value)}
                 id="message"
-                className="w-full rounded-md border border-slate-600 bg-slate-800 p-2 text-slate-100"
-                rows={10}
+                className="w-full rounded-md border border-slate-600 bg-slate-800 p-2 text-slate-100 min-h-[200px]"
+                rows={20}
                 placeholder="Write your message..."
               />
             </div>
           </div>
           <DialogFooter>
             <Button onClick={() => setOpenSendMail(false)}>Cancel</Button>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-              Send
+            <Button
+              onClick={handleSendMail}
+              disabled={isSendingMail}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {isSendingMail ? (
+                <Loader2Icon className="size-5 animate-spin" />
+              ) : (
+                "Send"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

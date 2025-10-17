@@ -130,19 +130,9 @@ export function LoginForm({
                   required
                 />
               </div>
-              <Button type="submit" className="w-full">
+              <Button disabled={loading} type="submit" className="w-full">
                 {loading ? <Loader2 className="animate-spin" /> : "Login"}
               </Button>
-
-              {/* <div className="text-center text-sm">
-                Don&apos;t have an account?{" "}
-                <a href="#" className="underline underline-offset-4">
-                  Sign up
-                </a>
-              </div> */}
-              {/* <div className="w-full flex items-center justify-center">
-                <DarkModeToggle />
-              </div> */}
             </div>
           </form>
           <div className="relative hidden md:block  ">

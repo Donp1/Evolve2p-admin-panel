@@ -1,31 +1,131 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+import { getSettings, updateSettings } from "@/lib/utils";
 
 export default function AdminSettings() {
+  const [loading, setLoading] = useState(false);
+  const [performing, setPerforming] = useState("");
   const [settings, setSettings] = useState({
     depositLimit: "",
-    withdrawLimit: "",
-    sendFee: "",
-    tradeFee: "",
+    withdrawalLimit: "",
+    sendCryptoFee: "",
+    tradingFee: "",
     maintenanceMode: false,
     supportEmail: "",
-    supportPhone: "",
+    supportPhoneNumber: "",
   });
 
   const handleChange = (key: string, value: any) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = (section: string) => {
-    toast.success(`${section} updated successfully!`);
+  const handleSubmit = async (section: string) => {
+    if (section === "Daily Limits") {
+      setPerforming(section);
+      const res = await updateSettings({
+        depositLimit: Number(settings.depositLimit),
+        withdrawalLimit: Number(settings.withdrawalLimit),
+      });
+
+      if (res?.error) {
+        setPerforming("");
+        toast.error(res?.message || "Failed to update daily limits.");
+        return;
+      }
+
+      if (res?.success) {
+        setPerforming("");
+        toast.success("Daily limits updated successfully!");
+        setSettings(res?.settings);
+      }
+    } else if (section === "Fees") {
+      setPerforming(section);
+      const res = await updateSettings({
+        sendCryptoFee: Number(settings.sendCryptoFee),
+        tradingFee: Number(settings.tradingFee),
+      });
+
+      if (res?.error) {
+        setPerforming("");
+        toast.error(res?.message || "Failed to update fees.");
+        return;
+      }
+
+      if (res?.success) {
+        setPerforming("");
+        toast.success("Fees updated successfully!");
+        setSettings(res?.settings);
+      }
+    } else if (section === "Maintenance Mode") {
+      setPerforming(section);
+      const res = await updateSettings({
+        maintenanceMode: settings.maintenanceMode,
+      });
+
+      if (res?.error) {
+        setPerforming("");
+        toast.error(res?.message || "Failed to update fees.");
+        return;
+      }
+
+      if (res?.success) {
+        setPerforming("");
+        toast.success("Maintenance Mode updated successfully!");
+        setSettings(res?.settings);
+      }
+    } else if (section === "Support Info") {
+      setPerforming(section);
+      const res = await updateSettings({
+        supportEmail: settings.supportEmail,
+        supportPhoneNumber: settings.supportPhoneNumber,
+      });
+
+      if (res?.error) {
+        setPerforming("");
+        toast.error(res?.message || "Failed to update fees.");
+        return;
+      }
+
+      if (res?.success) {
+        setPerforming("");
+        toast.success("Support Info updated successfully!");
+        setSettings(res?.settings);
+      }
+    }
   };
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const res = await getSettings();
+
+      if (res?.error) {
+        setLoading(false);
+        toast.error(res?.message || "Failed to load settings.");
+        return;
+      }
+
+      if (res?.success) {
+        setLoading(false);
+        setSettings(res?.settings);
+      }
+    })();
+  }, []);
+
+  if (loading)
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <Loader2 className="animate-spin" />
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-[#0b0f19] text-gray-100 p-8 space-y-8">
@@ -57,17 +157,24 @@ export default function AdminSettings() {
               <Input
                 type="number"
                 placeholder="2000"
-                value={settings.withdrawLimit}
-                onChange={(e) => handleChange("withdrawLimit", e.target.value)}
+                value={settings.withdrawalLimit}
+                onChange={(e) =>
+                  handleChange("withdrawalLimit", e.target.value)
+                }
                 className="bg-[#1c2333] border-gray-700"
               />
             </div>
           </div>
           <Button
+            disabled={performing == "Daily Limits"}
             onClick={() => handleSubmit("Daily Limits")}
             className="mt-4 bg-blue-600 hover:bg-blue-700"
           >
-            Save Daily Limits
+            {performing == "Daily Limits" ? (
+              <Loader2 className="size-5 animate-spin" />
+            ) : (
+              "Save Daily Limits"
+            )}
           </Button>
         </CardContent>
       </Card>
@@ -84,8 +191,8 @@ export default function AdminSettings() {
               <Input
                 type="number"
                 placeholder="0.5"
-                value={settings.sendFee}
-                onChange={(e) => handleChange("sendFee", e.target.value)}
+                value={settings.sendCryptoFee}
+                onChange={(e) => handleChange("sendCryptoFee", e.target.value)}
                 className="bg-[#1c2333] border-gray-700"
               />
             </div>
@@ -94,8 +201,8 @@ export default function AdminSettings() {
               <Input
                 type="number"
                 placeholder="1.0"
-                value={settings.tradeFee}
-                onChange={(e) => handleChange("tradeFee", e.target.value)}
+                value={settings.tradingFee}
+                onChange={(e) => handleChange("tradingFee", e.target.value)}
                 className="bg-[#1c2333] border-gray-700"
               />
             </div>
@@ -104,7 +211,11 @@ export default function AdminSettings() {
             onClick={() => handleSubmit("Fees")}
             className="mt-4 bg-blue-600 hover:bg-blue-700"
           >
-            Save Fees
+            {performing == "Fees" ? (
+              <Loader2 className="size-5 animate-spin" />
+            ) : (
+              " Save Fees"
+            )}
           </Button>
         </CardContent>
       </Card>
@@ -135,7 +246,11 @@ export default function AdminSettings() {
             onClick={() => handleSubmit("Maintenance Mode")}
             className="mt-4 bg-blue-600 hover:bg-blue-700"
           >
-            Save Maintenance Mode
+            {performing == "Maintenance Mode" ? (
+              <Loader2 className="size-5 animate-spin" />
+            ) : (
+              "Save Maintenance Mode"
+            )}
           </Button>
         </CardContent>
       </Card>
@@ -164,8 +279,10 @@ export default function AdminSettings() {
               <Input
                 type="text"
                 placeholder="+1 234 567 8900"
-                value={settings.supportPhone}
-                onChange={(e) => handleChange("supportPhone", e.target.value)}
+                value={settings.supportPhoneNumber}
+                onChange={(e) =>
+                  handleChange("supportPhoneNumber", e.target.value)
+                }
                 className="bg-[#1c2333] border-gray-700"
               />
             </div>
@@ -174,7 +291,11 @@ export default function AdminSettings() {
             onClick={() => handleSubmit("Support Info")}
             className="mt-4 bg-blue-600 hover:bg-blue-700"
           >
-            Save Support Info
+            {performing == "Support Info" ? (
+              <Loader2 className="size-5 animate-spin" />
+            ) : (
+              " Save Support Info"
+            )}
           </Button>
         </CardContent>
       </Card>

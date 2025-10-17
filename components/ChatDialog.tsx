@@ -200,7 +200,6 @@ export default function ChatDialog({
                     <div className="flex items-start gap-3">
                       {msg.sender !== "admin" && (
                         <Avatar className="h-8 w-8">
-                          {/* <AvatarImage src={`/${msg.sender}-avatar.png`} /> */}
                           <AvatarFallback>
                             {getAvatarFallback(msg.sender)}
                           </AvatarFallback>

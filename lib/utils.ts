@@ -525,3 +525,133 @@ export const sendChat = async (chatId: string, content: string) => {
     console.log(error);
   }
 };
+
+export const sendEmail = async (
+  email: string,
+  subject: string,
+  title: string,
+  message: string
+) => {
+  console.log(email, subject, title, message);
+  const token = localStorage.getItem("authToken");
+  if (!token) return;
+
+  try {
+    const res = await safeFetch(base_url + "/api/admin/send-mail", {
+      method: "POST",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : "",
+        "Content-type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        subject,
+        title,
+        message,
+      }),
+    });
+
+    return res;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const createAdmin = async (
+  email: string,
+  name: string,
+  password: string,
+  role: string
+) => {
+  const token = localStorage.getItem("authToken");
+  if (!token) return;
+
+  try {
+    const res = await safeFetch(base_url + "/api/admin/auth/register", {
+      method: "POST",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : "",
+        "Content-type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        password,
+        name,
+        role,
+      }),
+    });
+
+    return res;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const getAdmins = async () => {
+  const token = localStorage.getItem("authToken");
+  if (!token) return;
+
+  try {
+    const res = await safeFetch(base_url + "/api/admin/admins", {
+      method: "GET",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+    });
+
+    return res;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const getSettings = async () => {
+  const token = localStorage.getItem("authToken");
+  if (!token) return;
+
+  try {
+    const res = await safeFetch(base_url + "/api/admin/settings", {
+      method: "GET",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+    });
+
+    return res;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export interface UpdateSettingsPayload {
+  withdrawalLimit?: number;
+  depositLimit?: number;
+  sendCryptoFee?: number;
+  tradingFee?: number;
+  maintenanceMode?: boolean;
+  supportEmail?: string;
+  supportPhoneNumber?: string;
+}
+
+export const updateSettings = async (payload: UpdateSettingsPayload) => {
+  const token = localStorage.getItem("authToken");
+  if (!token) {
+    console.error("No auth token found");
+    return;
+  }
+
+  try {
+    const res = await safeFetch(`${base_url}/api/admin/settings`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    return res;
+  } catch (error) {
+    console.error("Error updating settings:", error);
+  }
+};
