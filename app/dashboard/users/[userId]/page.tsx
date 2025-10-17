@@ -35,7 +35,6 @@ import {
   resetUserPassword,
   sendEmail,
 } from "@/lib/utils";
-import { useAlert } from "@/hooks/useAlert";
 import {
   Dialog,
   DialogContent,
@@ -46,10 +45,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { RichTextEditor } from "@/components/RichTextEditor";
 import { toast } from "sonner";
-import { CKEditor } from "@ckeditor/ckeditor5-react";
-import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 
 export default function UserDetailsPage() {
   const { userId } = useParams<{ userId: string }>();
