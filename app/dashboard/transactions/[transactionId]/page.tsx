@@ -15,7 +15,7 @@ import {
 import { toast } from "sonner";
 import { getTransaction } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { copyToClipboard } from "@/constant";
+import { copyToClipboard, formatAddress } from "@/constant";
 
 export default function TransactionDetails() {
   const router = useRouter();
@@ -160,7 +160,7 @@ export default function TransactionDetails() {
             <p className="text-sm text-gray-400">From Address</p>
             <div className="flex items-center justify-between mt-2">
               <span className="font-mono text-sm text-gray-300">
-                {transaction?.fromAddress}
+                {formatAddress(transaction?.fromAddress)}
               </span>
               <Button
                 className="cursor-pointer"
@@ -179,7 +179,7 @@ export default function TransactionDetails() {
             <p className="text-sm text-gray-400">To Address</p>
             <div className="flex items-center justify-between mt-2">
               <span className="font-mono text-sm text-gray-300">
-                {transaction?.toAddress}
+                {formatAddress(transaction?.toAddress)}
               </span>
               <Button
                 className="cursor-pointer"
@@ -222,7 +222,7 @@ export default function TransactionDetails() {
             <Wallet className="w-5 h-5 text-purple-400" />
             <span className="text-sm">
               Wallet: {transaction?.wallet?.currency} —{" "}
-              {transaction?.wallet?.address}
+              {formatAddress(transaction?.wallet?.address)}
             </span>
           </div>
         </div>
