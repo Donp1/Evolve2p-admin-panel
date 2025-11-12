@@ -14,13 +14,14 @@ export default function AdminSettings() {
   const [loading, setLoading] = useState(false);
   const [performing, setPerforming] = useState("");
   const [settings, setSettings] = useState({
-    depositLimit: "",
-    withdrawalLimit: "",
-    sendCryptoFee: "",
-    tradingFee: "",
+    depositLimit: 0,
+    withdrawalLimit: 0,
+    sendCryptoFee: 0,
+    tradingFee: 0,
     maintenanceMode: false,
     supportEmail: "",
     supportPhoneNumber: "",
+    swapFee: 0,
   });
 
   const handleChange = (key: string, value: any) => {
@@ -51,6 +52,7 @@ export default function AdminSettings() {
       const res = await updateSettings({
         sendCryptoFee: Number(settings.sendCryptoFee),
         tradingFee: Number(settings.tradingFee),
+        swapFee: Number(settings.swapFee),
       });
 
       if (res?.error) {
@@ -203,6 +205,16 @@ export default function AdminSettings() {
                 placeholder="1.0"
                 value={settings.tradingFee}
                 onChange={(e) => handleChange("tradingFee", e.target.value)}
+                className="bg-[#1c2333] border-gray-700"
+              />
+            </div>
+            <div>
+              <Label>Swap Fee (%)</Label>
+              <Input
+                type="number"
+                placeholder="1.0"
+                value={settings.swapFee}
+                onChange={(e) => handleChange("swapFee", e.target.value)}
                 className="bg-[#1c2333] border-gray-700"
               />
             </div>

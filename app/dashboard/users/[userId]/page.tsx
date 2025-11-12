@@ -24,6 +24,8 @@ import {
   Banknote,
   Scale,
   Loader2Icon,
+  WalletIcon,
+  Copy,
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -46,12 +48,14 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { formatAddress } from "@/constant";
 
 export default function UserDetailsPage() {
   const { userId } = useParams<{ userId: string }>();
   const [user, setUser] = useState<any>(null);
   const [offers, setOffers] = useState<any>(null);
   const [trades, setTrades] = useState<any>(null);
+  const [wallets, setWallets] = useState<any>([]);
   const [loading, setLoading] = useState(false);
   const [openResetPassword, setOpenResetPassword] = useState(false);
   const [openSendMail, setOpenSendMail] = useState(false);
@@ -77,11 +81,14 @@ export default function UserDetailsPage() {
         return;
       }
 
+      console.log(res?.user);
+
       if (res?.success) {
         setUser(res?.user);
         setTrades([...res?.user?.tradesAsBuyer, ...res?.user?.tradesAsSeller]);
         setOffers(res?.user?.offers);
         setLoading(false);
+        setWallets(res?.user?.wallets || []);
       }
     })();
   }, [userId, reload]);
@@ -197,6 +204,12 @@ export default function UserDetailsPage() {
     }
   };
 
+  // 🔹 Copy to clipboard
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard!");
+  };
+
   const handleSendMail = async () => {
     setIsSendingMail(true);
     const res = await sendEmail(
@@ -250,7 +263,7 @@ export default function UserDetailsPage() {
         {/* 🔹 Tabs for Profile / Offers / Trades */}
         <CardContent className="pt-6">
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="w-full grid grid-cols-3 rounded-lg overflow-hidden border border-slate-700 bg-slate-800/60 backdrop-blur">
+            <TabsList className="w-full grid grid-cols-4 rounded-lg overflow-hidden border border-slate-700 bg-slate-800/60 backdrop-blur">
               <TabsTrigger
                 value="profile"
                 className="data-[state=active]:bg-blue-600 data-[state=active]:text-white 
@@ -271,6 +284,14 @@ export default function UserDetailsPage() {
                            hover:bg-slate-700/80 transition-all font-semibold text-slate-300"
               >
                 Trades
+              </TabsTrigger>
+
+              <TabsTrigger
+                value="wallets"
+                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white 
+                           hover:bg-slate-700/80 transition-all font-semibold text-slate-300"
+              >
+                Wallets
               </TabsTrigger>
             </TabsList>
 
@@ -422,6 +443,74 @@ export default function UserDetailsPage() {
                     </CardFooter>
                   </Card>
                 ))}
+              </div>
+            </TabsContent>
+
+            {/* Wallets */}
+            <TabsContent value="wallets" className="pt-6">
+              <div className="space-y-4">
+                <TabsContent value="wallets" className="pt-6">
+                  {wallets?.length <= 0 ? (
+                    <h1>No wallets found</h1>
+                  ) : (
+                    wallets.map((wallet: any) => (
+                      <Card
+                        key={wallet.id}
+                        className="bg-slate-700/40 border border-slate-600 mb-3"
+                      >
+                        <CardHeader className="flex justify-between items-center">
+                          <CardTitle className="flex items-center gap-2 text-slate-100">
+                            <WalletIcon className="w-4 h-4 text-blue-400" />
+                            {wallet.currency}
+                          </CardTitle>
+                          <Badge className="bg-slate-800 border border-slate-600">
+                            Index: {wallet.addressIndex}
+                          </Badge>
+                        </CardHeader>
+                        <CardContent className="space-y-2 text-sm text-slate-300">
+                          <div className="flex justify-between items-center">
+                            <span>Balance:</span>
+                            <span>
+                              {Number(wallet.balance)} {wallet.currency}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span>Address:</span>
+                            <div className="flex items-center gap-2">
+                              <code className="text-xs">
+                                {formatAddress(wallet.address)}
+                              </code>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => copyToClipboard(wallet.address)}
+                              >
+                                <Copy className="w-4 h-4 text-blue-400" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span>privateKey:</span>
+                            <div className="flex items-center gap-2">
+                              <code className="text-xs">
+                                {formatAddress(wallet.privateKey)}
+                              </code>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() =>
+                                  copyToClipboard(wallet.privateKey)
+                                }
+                              >
+                                <Copy className="w-4 h-4 text-blue-400" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </TabsContent>
               </div>
             </TabsContent>
           </Tabs>

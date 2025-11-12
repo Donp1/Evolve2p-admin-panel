@@ -631,6 +631,7 @@ export interface UpdateSettingsPayload {
   maintenanceMode?: boolean;
   supportEmail?: string;
   supportPhoneNumber?: string;
+  swapFee?: number;
 }
 
 export const updateSettings = async (payload: UpdateSettingsPayload) => {
